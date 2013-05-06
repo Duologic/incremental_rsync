@@ -10,6 +10,13 @@ This script can make incremental backups with Rsync.
 Todo: 
 - from remote to remote
 
+This script is only tested between Ubuntu 12.04 servers.
+
+Requirements:
+- Rsync
+- Bash
+- Sendemail (found in Ubuntu repos)
+
 Execute as:
 
     ./incremental_rsync /path/to/config.cfg
