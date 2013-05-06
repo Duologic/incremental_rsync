@@ -1,0 +1,145 @@
+#!/bin/bash
+#
+# Author: Jeroen Op 't Eynde
+# Github: Duologic
+#
+# This script can make incremental backups with Rsync.
+# - from local to local
+# - from local to remote
+# - from remote to local
+#
+# Todo: from remote to remote
+#
+# Execute as:
+#   ./incremental_rsync /path/to/config.cfg
+#
+# Config file:
+#   prefix="my_backup"
+#   source_ssh="false"
+#   source="/home"
+#   #source_key=""
+#   #source_user=""
+#   #source_host=""
+#
+#   destination_ssh="true"
+#   destination="/backup"
+#   destination_key="/home/user/.ssh/rsync-key"
+#   destination_user="root"
+#   destination_host="backup.somedomain.tld"
+#
+#   from_mail="noreply@somedomain.tld"
+#   to_mail="admin@somedomain.tld"
+#   smtp_server="smtp.somedomain.tld"
+
+pid=$$
+logfile=/var/log/$prefix.$pid.log
+tmpfile=/tmp/$prefix.$pid.log
+pidfile=/tmp/incremental_rsync.pid
+exitcode=0
+
+[ ! -f $logfile ]; touch $logfile
+[ ! -f $tmpfile ]; touch $tmpfile
+
+source $1
+
+log()
+{
+    while read mes
+    do
+        echo "$(date +"%b %e %k:%M:%S") $(hostname) $(echo $0)[$$]: $mes" 2>> $tmpfile 1>> $tmpfile
+    done
+}
+
+{
+
+if [ -f $pidfile ]; then
+    echo "Script already in use, PID file exists."
+    exitcode=1
+    exit 1
+fi
+
+echo $pid > $pidfile
+
+if [[ "$source_ssh" == "false" ]]; then
+    source_ssh=false
+elif [[ "$source_ssh" == "true" ]]; then
+    source_ssh=true
+fi
+if [[ "$destination_ssh" == "false" ]]; then
+    destination_ssh=false
+elif [[ "$destination_ssh" == "true" ]]; then
+    destination_ssh=true
+fi
+
+period=24
+
+linkdest="$destination/$prefix.1"
+backdest="$destination/$prefix.0"
+date=`date "+%Y-%m-%d %H:%M"`
+
+source_sshstring="$source_user@$source_host"
+destination_sshstring="$destination_user@$destination_host"
+
+echo "Backup on $date  as $(whoami)"
+
+# Remove oldest backup
+max=$period
+to_remove=$destination/$prefix.$max;
+if $destination_ssh; then
+    ssh -i $destination_key $destination_sshstring "rm -rf $to_remove"
+else
+    rm -rf $to_remove
+fi
+
+counter=$(echo $max-1|bc)
+echo "Refactoring directories:"
+while [ $counter -gt -1 ]; do
+    to_movefrom="$destination/$prefix.$counter"
+    to_moveto="$destination/$prefix.$(echo $counter+1|bc)"
+    if $destination_ssh; then
+        ssh -i $destination_key $destination_sshstring "mv -f $to_movefrom $to_moveto"
+    else
+        mv -f $to_movefrom $to_moveto
+    fi
+    counter=$(echo $counter-1|bc)
+done
+
+echo "Rsync Backup $source to $backdest"
+
+
+linkdestexists=0
+if $destination_ssh; then
+    ssh -i $destination_key $destination_sshstring "test -d $linkdest"
+    linkdestexists=$?
+else
+    if [ -d $linkdest ]; then
+        linkdestexists="0"
+    fi
+fi
+
+linkdest_string=""
+if [ $linkdestexists == 0 ]; then
+    linkdest_string="--link-dest=$linkdest"
+fi
+
+if $source_ssh; then
+    rsync -a --stats -h $linkdest_string -e "ssh -i $source_key " $source_sshstring:$source $backdest
+elif $destination_ssh; then
+    rsync -a --stats -h $linkdest_string -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
+else
+    rsync -a --stats -h $linkdest_string $source $backdest
+fi
+
+date=`date "+%Y-%m-%d %H:%M"`
+echo "Done on $date."
+
+rm -rf $pidfile
+#}|logger -i -p local0.notice -t "$(basename $0)" -s 
+} 2>&1 | log
+
+sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
+
+cat $tmpfile >> $logfile
+rm $tmpfile
+
+exit $exitcode 
