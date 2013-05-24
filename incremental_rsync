@@ -31,6 +31,9 @@
 #   to_mail="admin@somedomain.tld"
 #   smtp_server="smtp.somedomain.tld"
 
+
+source $1
+
 pid=$$
 logfile=/var/log/$prefix.$pid.log
 tmpfile=/tmp/$prefix.$pid.log
@@ -39,8 +42,6 @@ exitcode=0
 
 [ ! -f $logfile ]; touch $logfile
 [ ! -f $tmpfile ]; touch $tmpfile
-
-source $1
 
 log()
 {
