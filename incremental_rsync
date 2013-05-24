@@ -15,6 +15,7 @@
 #
 # Config file:
 #   prefix="my_backup"
+#   amount=10
 #   source_ssh="false"
 #   source="/home"
 #   #source_key=""
@@ -32,6 +33,7 @@
 #   smtp_server="smtp.somedomain.tld"
 
 
+amount=24 #default amount
 source $1
 
 pid=$$
@@ -72,7 +74,6 @@ elif [[ "$destination_ssh" == "true" ]]; then
     destination_ssh=true
 fi
 
-period=24
 
 linkdest="$destination/$prefix.1"
 backdest="$destination/$prefix.0"
@@ -84,7 +85,7 @@ destination_sshstring="$destination_user@$destination_host"
 echo "Backup on $date  as $(whoami)"
 
 # Remove oldest backup
-max=$period
+max=$amount
 to_remove=$destination/$prefix.$max;
 if $destination_ssh; then
     ssh -i $destination_key $destination_sshstring "rm -rf $to_remove"
