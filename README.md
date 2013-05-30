@@ -26,6 +26,7 @@ Config file:
     prefix="my_backup"
     source_ssh="false"
     source="/home"
+    exclude="big_files"
     #source_key=""
     #source_user=""
     #source_host=""

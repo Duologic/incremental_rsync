@@ -18,6 +18,7 @@
 #   amount=10
 #   source_ssh="false"
 #   source="/home"
+#   exclude="big_files"
 #   #source_key=""
 #   #source_user=""
 #   #source_host=""
@@ -74,6 +75,10 @@ elif [[ "$destination_ssh" == "true" ]]; then
     destination_ssh=true
 fi
 
+$rsync_exclude = ""
+if [ -n $exclude ]; then
+    $rsync_exclude = "--exclude '$exclude'"
+fi
 
 linkdest="$destination/$prefix.1"
 backdest="$destination/$prefix.0"
@@ -125,11 +130,11 @@ if [ $linkdestexists == 0 ]; then
 fi
 
 if $source_ssh; then
-    rsync -a --stats -h $linkdest_string -e "ssh -i $source_key " $source_sshstring:$source $backdest
+    rsync -a --stats $rsync_exclude -h $linkdest_string -e "ssh -i $source_key " $source_sshstring:$source $backdest
 elif $destination_ssh; then
-    rsync -a --stats -h $linkdest_string -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
+    rsync -a --stats $rsync_exclude -h $linkdest_string -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
 else
-    rsync -a --stats -h $linkdest_string $source $backdest
+    rsync -a --stats $rsync_exclude -h $linkdest_string $source $backdest
 fi
 
 date=`date "+%Y-%m-%d %H:%M"`
