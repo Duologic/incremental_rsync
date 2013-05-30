@@ -75,9 +75,9 @@ elif [[ "$destination_ssh" == "true" ]]; then
     destination_ssh=true
 fi
 
-$rsync_exclude = ""
+rsync_exclude = ""
 if [ -n $exclude ]; then
-    $rsync_exclude = "--exclude '$exclude'"
+    rsync_exclude = "--exclude '$exclude'"
 fi
 
 linkdest="$destination/$prefix.1"
