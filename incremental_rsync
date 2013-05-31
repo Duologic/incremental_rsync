@@ -18,7 +18,7 @@
 #   amount=10
 #   source_ssh="false"
 #   source="/home"
-#   exclude="big_files"
+#   exclude_file="example_excludes.cfg"
 #   #source_key=""
 #   #source_user=""
 #   #source_host=""
@@ -32,7 +32,11 @@
 #   from_mail="noreply@somedomain.tld"
 #   to_mail="admin@somedomain.tld"
 #   smtp_server="smtp.somedomain.tld"
-
+#
+# Exclude file: (paths relative to source folder)
+#   - excludedir/
+#   - exclude_file
+#
 
 amount=24 #default amount
 source $1
@@ -76,8 +80,8 @@ elif [[ "$destination_ssh" == "true" ]]; then
 fi
 
 rsync_exclude=""
-if [ -n $exclude ]; then
-    rsync_exclude="--exclude='$exclude'"
+if [ -n $exclude_file ]; then
+    rsync_exclude="--exclude-from=$exclude_file"
 fi
 
 linkdest="$destination/$prefix.1"
@@ -130,11 +134,11 @@ if [ $linkdestexists == 0 ]; then
 fi
 
 if $source_ssh; then
-    rsync -a --stats $rsync_exclude -h $linkdest_string -e "ssh -i $source_key " $source_sshstring:$source $backdest
+    rsync -az --stats $rsync_exclude -h $linkdest_string -e "ssh -i $source_key " $source_sshstring:$source $backdest
 elif $destination_ssh; then
-    rsync -a --stats $rsync_exclude -h $linkdest_string -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
+    rsync -az --stats $rsync_exclude -h $linkdest_string -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
 else
-    rsync -a --stats $rsync_exclude -h $linkdest_string $source $backdest
+    rsync -az --stats $rsync_exclude -h $linkdest_string $source $backdest
 fi
 
 date=`date "+%Y-%m-%d %H:%M"`
@@ -143,7 +147,6 @@ echo "Done on $date."
 rm -rf $pidfile
 #}|logger -i -p local0.notice -t "$(basename $0)" -s 
 } 2>&1 | log
-
 sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
 
 cat $tmpfile >> $logfile
