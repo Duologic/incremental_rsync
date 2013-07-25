@@ -45,6 +45,7 @@ pid=$$
 logfile=/var/log/$prefix.$pid.log
 tmpfile=/tmp/$prefix.$pid.log
 pidfile=/tmp/incremental_rsync.pid
+rsynccommand="rsync -az -h --stats"
 exitcode=0
 
 [ ! -f $logfile ]; touch $logfile
@@ -79,9 +80,12 @@ elif [[ "$destination_ssh" == "true" ]]; then
     destination_ssh=true
 fi
 
-rsync_exclude=""
+if [ -n $bwlimitinkbps ]; then
+    rsynccommand="$rsynccommand --bwlimit=$bwlimitinkbps"
+fi
+
 if [ -n $exclude_file ]; then
-    rsync_exclude="--exclude-from=$exclude_file"
+    rsynccommand="$rsynccommand --exclude-from=$exclude_file"
 fi
 
 linkdest="$destination/$prefix.1"
@@ -96,6 +100,7 @@ echo "Backup on $date  as $(whoami)"
 # Remove oldest backup
 max=$amount
 to_remove=$destination/$prefix.$max;
+
 if $destination_ssh; then
     ssh -i $destination_key $destination_sshstring "rm -rf $to_remove"
 else
@@ -103,7 +108,7 @@ else
 fi
 
 counter=$(echo $max-1|bc)
-echo "Refactoring directories:"
+echo "Refactoring directories..."
 while [ $counter -gt -1 ]; do
     to_movefrom="$destination/$prefix.$counter"
     to_moveto="$destination/$prefix.$(echo $counter+1|bc)"
@@ -115,8 +120,7 @@ while [ $counter -gt -1 ]; do
     counter=$(echo $counter-1|bc)
 done
 
-echo "Rsync Backup $source to $backdest"
-
+echo "Check if linkdest $linkdest exists on receiving side..."
 
 linkdestexists=0
 if $destination_ssh; then
@@ -124,21 +128,22 @@ if $destination_ssh; then
     linkdestexists=$?
 else
     if [ -d $linkdest ]; then
-        linkdestexists="0"
+        linkdestexists=0
     fi
 fi
 
-linkdest_string=""
 if [ $linkdestexists == 0 ]; then
-    linkdest_string="--link-dest=$linkdest"
+    rsyccommand="$rsynccommand --link-dest=$linkdest"
 fi
 
+echo "Rsync Backup $source_sshstring:$source to $destination_sshstring:$backdest"
+
 if $source_ssh; then
-    rsync -az --stats $rsync_exclude -h $linkdest_string -e "ssh -i $source_key " $source_sshstring:$source $backdest
+    $rsynccommand -e "ssh -i $source_key " $source_sshstring:$source $backdest
 elif $destination_ssh; then
-    rsync -az --stats $rsync_exclude -h $linkdest_string -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
+    $rsynccommand -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
 else
-    rsync -az --stats $rsync_exclude -h $linkdest_string $source $backdest
+    $rsynccommand $source $backdest
 fi
 
 date=`date "+%Y-%m-%d %H:%M"`
@@ -147,6 +152,7 @@ echo "Done on $date."
 rm -rf $pidfile
 #}|logger -i -p local0.notice -t "$(basename $0)" -s 
 } 2>&1 | log
+#}
 sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
 
 cat $tmpfile >> $logfile
