@@ -42,8 +42,9 @@ amount=24 #default amount
 source $1
 
 pid=$$
+date=`date "+%Y-%m-%d_%H:%M"`
 logfile=/var/log/$prefix.$pid.log
-tmpfile=/tmp/$prefix.$pid.log
+tmpfile=/tmp/$prefix.$date.log
 pidfile=/tmp/incremental_rsync.pid
 rsynccommand="rsync -az -h --stats"
 exitcode=0
@@ -64,7 +65,7 @@ log()
 if [ -f $pidfile ]; then
     echo "Script already in use, PID file exists."
     exitcode=1
-    exit 1
+    exit $exitcode
 fi
 
 echo $pid > $pidfile
@@ -90,7 +91,6 @@ fi
 
 linkdest="$destination/$prefix.1"
 backdest="$destination/$prefix.0"
-date=`date "+%Y-%m-%d %H:%M"`
 
 source_sshstring="$source_user@$source_host"
 destination_sshstring="$destination_user@$destination_host"
