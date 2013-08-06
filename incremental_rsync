@@ -49,8 +49,8 @@ pidfile=/tmp/incremental_rsync.pid
 rsynccommand="rsync -az -h --stats"
 exitcode=0
 
-[ ! -f $logfile ]; touch $logfile
-[ ! -f $tmpfile ]; touch $tmpfile
+[[ ! -f $logfile ]]; touch $logfile
+[[ ! -f $tmpfile ]]; touch $tmpfile
 
 log()
 {
@@ -62,7 +62,7 @@ log()
 
 {
 
-if [ -f $pidfile ]; then
+if [[ -f $pidfile ]]; then
     echo "Script already in use, PID file exists."
     exitcode=1
     exit $exitcode
@@ -81,11 +81,11 @@ elif [[ "$destination_ssh" == "true" ]]; then
     destination_ssh=true
 fi
 
-if [ -n $bwlimitinkbps ]; then
+if [[ -n $bwlimitinkbps ]]; then
     rsynccommand="$rsynccommand --bwlimit=$bwlimitinkbps"
 fi
 
-if [ -n $exclude_file ]; then
+if [[ -n $exclude_file ]]; then
     rsynccommand="$rsynccommand --exclude-from=$exclude_file"
 fi
 
@@ -122,29 +122,32 @@ done
 
 echo "Check if linkdest $linkdest exists on receiving side..."
 
-linkdestexists=0
+linkdestexists=1
 if $destination_ssh; then
     ssh -i $destination_key $destination_sshstring "test -d $linkdest"
     linkdestexists=$?
 else
-    if [ -d $linkdest ]; then
-        linkdestexists="0"
+    if [[ -d $linkdest ]]; then
+        linkdestexists=0
     fi
 fi
 
-if [ $linkdestexists == 0 ]; then
-    rsyccommand="$rsynccommand --link-dest=$linkdest"
+if [[ $linkdestexists==0 ]]; then
+    rsynccommand="$rsynccommand --link-dest=$linkdest"
 fi
 
 echo "Rsync Backup $source_sshstring:$source to $destination_sshstring:$backdest"
 
 if $source_ssh; then
-    $rsynccommand -e "ssh -i $source_key " $source_sshstring:$source $backdest
+    rsynccommand="$rsynccommand -e 'ssh -i $source_key ' $source_sshstring:$source $backdest"
 elif $destination_ssh; then
-    $rsynccommand -e "ssh -i $destination_key " $source $destination_sshstring:$backdest
+    rsynccommand="$rsynccommand -e 'ssh -i $destination_key ' $source $destination_sshstring:$backdest"
 else
-    $rsynccommand $source $backdest
+    rsynccommand="$rsynccommand $source $backdest"
 fi
+
+echo "Executing: $rsynccommand"
+bash -c $rsynccommand
 
 date=`date "+%Y-%m-%d %H:%M"`
 echo "Done on $date."
