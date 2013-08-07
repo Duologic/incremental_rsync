@@ -46,7 +46,7 @@ date=`date "+%Y-%m-%d_%H:%M"`
 logfile=/var/log/$prefix.$pid.log
 tmpfile=/tmp/$prefix.$date.log
 pidfile=/tmp/incremental_rsync.pid
-rsynccommand="rsync -az -h --stats"
+rsynccommand="rsync -az -H --stats"
 exitcode=0
 
 [[ ! -f $logfile ]]; touch $logfile
