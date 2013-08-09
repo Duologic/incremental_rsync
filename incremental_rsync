@@ -147,7 +147,7 @@ else
 fi
 
 echo "Executing: $rsynccommand"
-bash -c $rsynccommand
+bash -c "$rsynccommand"
 
 date=`date "+%Y-%m-%d %H:%M"`
 echo "Done on $date."
