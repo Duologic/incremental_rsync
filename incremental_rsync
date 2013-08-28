@@ -158,6 +158,17 @@ rm -rf $pidfile
 #}
 sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
 
+if profile; then
+    profiler_date = $(date +%s)
+    profiler_sent = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f3)
+    profiler_received = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f7)
+    profiler_speed = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f10)
+
+    echo "$profiler_string.incremental_rsync.sent $profiler_sent $profiler_date" | nc $carbon_server $carbon_port -c
+    echo "$profiler_string.incremental_rsync.received $profiler_received $profiler_date" | nc $carbon_server $carbon_port -c
+    echo "$profiler_string.incremental_rsync.speed $profiler_speed $profiler_date" | nc $carbon_server $carbon_port -c
+fi
+
 cat $tmpfile >> $logfile
 rm $tmpfile
 
