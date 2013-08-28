@@ -158,7 +158,7 @@ rm -rf $pidfile
 #}
 sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
 
-if profile; then
+if $profile; then
     profiler_date = $(date +%s)
     profiler_sent = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f3)
     profiler_received = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f7)
