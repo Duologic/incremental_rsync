@@ -16,14 +16,14 @@
 # Config file:
 #   prefix="my_backup"
 #   amount=10
-#   source_ssh="false"
+#   source_ssh=false
 #   source="/home"
 #   exclude_file="example_excludes.cfg"
 #   #source_key=""
 #   #source_user=""
 #   #source_host=""
 #
-#   destination_ssh="true"
+#   destination_ssh=true
 #   destination="/backup"
 #   destination_key="/home/user/.ssh/rsync-key"
 #   destination_user="root"
@@ -69,17 +69,6 @@ if [[ -f $pidfile ]]; then
 fi
 
 echo $pid > $pidfile
-
-if [[ "$source_ssh" == "false" ]]; then
-    source_ssh=false
-elif [[ "$source_ssh" == "true" ]]; then
-    source_ssh=true
-fi
-if [[ "$destination_ssh" == "false" ]]; then
-    destination_ssh=false
-elif [[ "$destination_ssh" == "true" ]]; then
-    destination_ssh=true
-fi
 
 if [[ -n $bwlimitinkbps ]]; then
     rsynccommand="$rsynccommand --bwlimit=$bwlimitinkbps"
@@ -159,14 +148,14 @@ rm -rf $pidfile
 sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
 
 if $profile; then
-    profiler_date = $(date +%s)
-    profiler_sent = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f3)
-    profiler_received = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f7)
-    profiler_speed = $(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f10)
+    profiler_date=$(date +%s)
+    profiler_sent=$(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f3)
+    profiler_received=$(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f7)
+    profiler_speed=$(grep -e "sent [0-9]\+" $tmpfile|cut -d']' -f2|cut -d' ' -f10)
 
-    echo "$profiler_string.incremental_rsync.sent $profiler_sent $profiler_date" | nc $carbon_server $carbon_port -c
-    echo "$profiler_string.incremental_rsync.received $profiler_received $profiler_date" | nc $carbon_server $carbon_port -c
-    echo "$profiler_string.incremental_rsync.speed $profiler_speed $profiler_date" | nc $carbon_server $carbon_port -c
+    echo "$profiler_string.incremental_rsync.sent $profiler_sent $profiler_date" | nc $carbon_server $carbon_port
+    echo "$profiler_string.incremental_rsync.received $profiler_received $profiler_date" | nc $carbon_server $carbon_port
+    echo "$profiler_string.incremental_rsync.speed $profiler_speed $profiler_date" | nc $carbon_server $carbon_port
 fi
 
 cat $tmpfile >> $logfile
