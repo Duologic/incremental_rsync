@@ -51,7 +51,7 @@ exitcode=1
 [[ ! -f $logfile ]]; touch $logfile
 [[ ! -f $tmpfile ]]; touch $tmpfile
 
-log()
+function log()
 {
     while read mes
     do
@@ -59,7 +59,9 @@ log()
     done
 }
 
+function dosync()
 {
+    local __exitcode=$1
 
     if [[ -f $pidfile ]]; then
         echo "Script already in use, PID file exists."
@@ -143,10 +145,13 @@ log()
 
     rm -rf $pidfile
 
-} 2>&1 | log
-#}
+    echo "Exitcode = $exitcode"
+    eval $__exitcode="'$exitcode'"
+}
 
+dosync exitcode 2>&1 | log
 if [[ $exitcode -gt 0 ]]; then
+    echo "Sending mail..."
     sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
 fi
 
