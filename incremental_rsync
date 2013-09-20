@@ -61,12 +61,10 @@ function log()
 
 function dosync()
 {
-    local __exitcode=$1
-
     if [[ -f $pidfile ]]; then
         echo "Script already in use, PID file exists."
         exitcode=1
-        exit $exitcode
+        return $exitcode
     fi
 
     echo $pid > $pidfile
@@ -146,10 +144,13 @@ function dosync()
     rm -rf $pidfile
 
     echo "Exitcode = $exitcode"
-    eval $__exitcode="'$exitcode'"
+    return $exitcode
 }
 
-dosync exitcode 2>&1 | log
+dosync 2>&1 | log
+
+exitcode=${PIPESTATUS[0]}
+
 if [[ $exitcode -gt 0 ]]; then
     echo "Sending mail..."
     sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
