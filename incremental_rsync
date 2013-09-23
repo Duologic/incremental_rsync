@@ -45,7 +45,7 @@ date=`date "+%Y-%m-%d_%H:%M"`
 logfile=/var/log/$prefix.$date.log
 tmpfile=/tmp/$prefix.$date.log
 pidfile=/tmp/incremental_rsync.pid
-rsynccommand="rsync -az -H --stats"
+rsynccommand="rsync -az --stats"
 exitcode=1
 
 [[ ! -f $logfile ]]; touch $logfile
@@ -153,7 +153,7 @@ exitcode=${PIPESTATUS[0]}
 
 if [[ $exitcode -gt 0 ]]; then
     echo "Sending mail..."
-    sendemail -f $from_mail -t $to_mail -u "[script_output] $prefix" -m "$prefix has been executed." -s $smtp_server -a $tmpfile
+    sendemail -f $from_mail -t $to_mail -u "[backup_script] ERROR on $prefix backup" -m "$prefix gave an error, please review the included logfile." -s $smtp_server -a $tmpfile
 fi
 
 if $profile; then
